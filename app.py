@@ -50,7 +50,7 @@ def save_prediction(cement, sf, fa, scms, water, sand, sp, qp, stf, f_type, f_ra
     c = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
-        INSERT INTO predictions (timestamp, cement_ratio, sf_ratio, fa_ratio, scms, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu)
+        INSERT INTO predictions (timestamp, scms, cement_ratio, sf_ratio, fa_ratio, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (now, cement, sf, fa, scms, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu))
     conn.commit()
@@ -71,10 +71,10 @@ st.write("Input the 12 mixture parameters to predict compressive strength ($F_{c
 st.sidebar.header("🛠️ Input Parameters")
 
 # Sidebar inputs for all 12 feature columns
+scms = st.sidebar.number_input("SCMS (mass fraction)", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
 cement_ratio = st.sidebar.number_input("Cement ratio (ratio)", min_value=0.0, max_value=2.0, value=1.0, step=0.05)
 sf_ratio = st.sidebar.number_input("SF ratio (ratio)", min_value=0.0, max_value=1.0, value=0.25, step=0.01)
 fa_ratio = st.sidebar.number_input("FA ratio (ratio)", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-scms = st.sidebar.number_input("SCMS (mass fraction)", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
 water = st.sidebar.number_input("Water (mass fraction)", min_value=0.0, max_value=1.0, value=0.18, step=0.005)
 sand_ratio = st.sidebar.number_input("Sand ratio (ratio)", min_value=0.0, max_value=3.0, value=1.1, step=0.05)
 sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=0.1, value=0.015, step=0.001)
