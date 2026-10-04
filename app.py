@@ -27,10 +27,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS predictions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT,
+            scms REAL,
             cement_ratio REAL,
             sf_ratio REAL,
             fa_ratio REAL,
-            scms REAL,
             water REAL,
             sand_ratio REAL,
             sp REAL,
@@ -45,12 +45,12 @@ def init_db():
     conn.commit()
     conn.close()
 
-def save_prediction(cement, sf, fa, scms, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu):
+def save_prediction(scms, cement, sf, fa, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu):
     conn = sqlite3.connect("experiments.db")
     c = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
-        INSERT INTO predictions (timestamp, scms, cement_ratio, sf_ratio, fa_ratio, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu)
+        INSERT INTO predictions (timestamp, cement_ratio, sf_ratio, fa_ratio, scms, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (now, cement, sf, fa, scms, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu))
     conn.commit()
@@ -70,19 +70,19 @@ st.write("Input the 12 mixture parameters to predict compressive strength ($F_{c
 
 st.sidebar.header("🛠️ Input Parameters")
 
-# Sidebar inputs for all 12 feature columns
-scms = st.sidebar.number_input("SCMS (mass fraction)", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-cement_ratio = st.sidebar.number_input("Cement ratio (ratio)", min_value=0.0, max_value=2.0, value=1.0, step=0.05)
-sf_ratio = st.sidebar.number_input("SF ratio (ratio)", min_value=0.0, max_value=1.0, value=0.25, step=0.01)
-fa_ratio = st.sidebar.number_input("FA ratio (ratio)", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-water = st.sidebar.number_input("Water (mass fraction)", min_value=0.0, max_value=1.0, value=0.18, step=0.005)
-sand_ratio = st.sidebar.number_input("Sand ratio (ratio)", min_value=0.0, max_value=3.0, value=1.1, step=0.05)
-sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=0.1, value=0.0015, step=0.0001)
-qp = st.sidebar.number_input("QP (mass fraction)", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-stf = st.sidebar.number_input("STF (vol. fraction)", min_value=0.0, max_value=0.1, value=0.02, step=0.001)
-fiber_type = st.sidebar.number_input("additional fiber type (encoded)", min_value=0.0, max_value=10.0, value=0.0, step=1.0)
-fiber_ratio = st.sidebar.number_input("additional fiber ratio (vol. fraction)", min_value=0.0, max_value=0.1, value=0.0, step=0.001)
-temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1000.0, value=20.0, step=10.0)
+# Sidebar inputs configured with high float precision (format="%.4f")
+scms = st.sidebar.number_input("SCMS (mass fraction)", min_value=0.0, max_value=2.0, value=0.2000, step=0.0100, format="%.4f")
+cement_ratio = st.sidebar.number_input("Cement ratio (ratio)", min_value=0.0, max_value=5.0, value=1.0000, step=0.0100, format="%.4f")
+sf_ratio = st.sidebar.number_input("SF ratio (ratio)", min_value=0.0, max_value=2.0, value=0.2500, step=0.0100, format="%.4f")
+fa_ratio = st.sidebar.number_input("FA ratio (ratio)", min_value=0.0, max_value=2.0, value=0.0000, step=0.0100, format="%.4f")
+water = st.sidebar.number_input("Water (mass fraction)", min_value=0.0, max_value=2.0, value=0.1800, step=0.0010, format="%.4f")
+sand_ratio = st.sidebar.number_input("Sand ratio (ratio)", min_value=0.0, max_value=5.0, value=1.1000, step=0.0100, format="%.4f")
+sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=1.0, value=0.0150, step=0.0001, format="%.4f")
+qp = st.sidebar.number_input("QP (mass fraction)", min_value=0.0, max_value=2.0, value=0.0000, step=0.0100, format="%.4f")
+stf = st.sidebar.number_input("STF (vol. fraction)", min_value=0.0, max_value=1.0, value=0.0200, step=0.0001, format="%.4f")
+fiber_type = st.sidebar.number_input("additional fiber type (encoded)", min_value=0.0, max_value=10.0, value=0.0000, step=1.0000, format="%.1f")
+fiber_ratio = st.sidebar.number_input("additional fiber ratio (vol. fraction)", min_value=0.0, max_value=1.0, value=0.0000, step=0.0001, format="%.4f")
+temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1000.0, value=20.0000, step=1.0000, format="%.2f")
 
 # Prediction Logic
 if st.button("🚀 Predict & Log Experiment", type="primary"):
@@ -90,10 +90,10 @@ if st.button("🚀 Predict & Log Experiment", type="primary"):
         try:
             # Construct DataFrame with exact feature names and order required by the trained model
             input_data = pd.DataFrame([{
+               'SCMS': scms,
                 'Cement ratio': cement_ratio,
                 'SF ratio': sf_ratio,
                 'FA ratio': fa_ratio,
-                'SCMS': scms,
                 'Water': water,
                 'Sand ratio': sand_ratio,
                 'SP': sp,
@@ -104,8 +104,9 @@ if st.button("🚀 Predict & Log Experiment", type="primary"):
                 'temp': temp
             }])
             
+            # Unrounded full-precision prediction value
             pred = model.predict(input_data)[0]
-            pred_value = round(float(pred), 4)
+            pred_value = float(pred)
             
             save_prediction(cement_ratio, sf_ratio, fa_ratio, scms, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, pred_value)
             st.success(f"✅ Predicted Compressive Strength ($F_{{cu}}$): **{pred_value} MPa**")
