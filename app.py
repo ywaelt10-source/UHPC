@@ -23,7 +23,7 @@ model = load_model()
 def init_db():
     db_file = "experiments.db"
     
-    # Check if old table exists with wrong columns and reset if needed
+    # Reset DB if schema doesn't match current 12-feature structure
     if os.path.exists(db_file):
         conn = sqlite3.connect(db_file)
         c = conn.cursor()
@@ -31,8 +31,7 @@ def init_db():
         columns = [column[1] for column in c.fetchall()]
         conn.close()
         
-        # If the schema doesn't have 12 features, recreate DB
-        if 'sf_ratio' not in columns and len(columns) > 0:
+        if 'sf_ratio' not in columns or len(columns) != 15:
             os.remove(db_file)
 
     conn = sqlite3.connect(db_file)
@@ -63,9 +62,13 @@ def save_prediction(scms, cement, sf, fa, water, sand, sp, qp, stf, f_type, f_ra
     conn = sqlite3.connect("experiments.db")
     c = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 14 values inserted into 14 columns (id is auto-incremented)
     c.execute('''
-        INSERT INTO predictions (timestamp, scms, cement_ratio, sf_ratio, fa_ratio, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO predictions (
+            timestamp, scms, cement_ratio, sf_ratio, fa_ratio, water, 
+            sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (now, cement, sf, fa, scms, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu))
     conn.commit()
     conn.close()
@@ -84,7 +87,7 @@ st.write("Input the 12 mixture parameters to predict compressive strength ($F_{c
 
 st.sidebar.header("🛠️ Input Parameters")
 
-# Sidebar inputs configured with high float precision (format="%.4f")
+# Sidebar inputs with precision
 scms = st.sidebar.number_input("SCMS (mass fraction)", min_value=0.0, max_value=2.0, value=0.2000, step=0.0100, format="%.4f")
 cement_ratio = st.sidebar.number_input("Cement ratio (ratio)", min_value=0.0, max_value=5.0, value=1.0000, step=0.0100, format="%.4f")
 sf_ratio = st.sidebar.number_input("SF ratio (ratio)", min_value=0.0, max_value=2.0, value=0.2500, step=0.0100, format="%.4f")
@@ -102,7 +105,7 @@ temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1000.0, v
 if st.button("🚀 Predict & Log Experiment", type="primary"):
     if model is not None:
         try:
-            # Construct DataFrame with exact feature names and order required by the trained model
+            # Construct DataFrame with exact feature names and order required by the model
             input_data = pd.DataFrame([{
                 'SCMS': scms,
                 'Cement ratio': cement_ratio,
