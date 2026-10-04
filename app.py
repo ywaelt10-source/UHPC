@@ -19,9 +19,23 @@ def load_model():
 
 model = load_model()
 
-# 3. Database Setup (Persistent Storage)
+# 3. Database Setup (Auto-Reset Old Database Schema)
 def init_db():
-    conn = sqlite3.connect("experiments.db")
+    db_file = "experiments.db"
+    
+    # Check if old table exists with wrong columns and reset if needed
+    if os.path.exists(db_file):
+        conn = sqlite3.connect(db_file)
+        c = conn.cursor()
+        c.execute("PRAGMA table_info(predictions)")
+        columns = [column[1] for column in c.fetchall()]
+        conn.close()
+        
+        # If the schema doesn't have 12 features, recreate DB
+        if 'sf_ratio' not in columns and len(columns) > 0:
+            os.remove(db_file)
+
+    conn = sqlite3.connect(db_file)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS predictions (
@@ -50,7 +64,7 @@ def save_prediction(scms, cement, sf, fa, water, sand, sp, qp, stf, f_type, f_ra
     c = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
-        INSERT INTO predictions (timestamp, cement_ratio, sf_ratio, fa_ratio, scms, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu)
+        INSERT INTO predictions (timestamp, scms, cement_ratio, sf_ratio, fa_ratio, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (now, cement, sf, fa, scms, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu))
     conn.commit()
@@ -90,7 +104,7 @@ if st.button("🚀 Predict & Log Experiment", type="primary"):
         try:
             # Construct DataFrame with exact feature names and order required by the trained model
             input_data = pd.DataFrame([{
-               'SCMS': scms,
+                'SCMS': scms,
                 'Cement ratio': cement_ratio,
                 'SF ratio': sf_ratio,
                 'FA ratio': fa_ratio,
