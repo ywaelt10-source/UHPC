@@ -77,7 +77,7 @@ sf_ratio = st.sidebar.number_input("SF ratio (ratio)", min_value=0.0, max_value=
 fa_ratio = st.sidebar.number_input("FA ratio (ratio)", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 water = st.sidebar.number_input("Water (mass fraction)", min_value=0.0, max_value=1.0, value=0.18, step=0.005)
 sand_ratio = st.sidebar.number_input("Sand ratio (ratio)", min_value=0.0, max_value=3.0, value=1.1, step=0.05)
-sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=0.1, value=0.015, step=0.0001)
+sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=0.1, value=0.0015, step=0.0001)
 qp = st.sidebar.number_input("QP (mass fraction)", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 stf = st.sidebar.number_input("STF (vol. fraction)", min_value=0.0, max_value=0.1, value=0.02, step=0.001)
 fiber_type = st.sidebar.number_input("additional fiber type (encoded)", min_value=0.0, max_value=10.0, value=0.0, step=1.0)
