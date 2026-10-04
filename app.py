@@ -105,7 +105,7 @@ if st.button("🚀 Predict & Log Experiment", type="primary"):
             }])
             
             pred = model.predict(input_data)[0]
-            pred_value = round(float(pred), 2)
+            pred_value = round(float(pred), 4)
             
             save_prediction(cement_ratio, sf_ratio, fa_ratio, scms, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, pred_value)
             st.success(f"✅ Predicted Compressive Strength ($F_{{cu}}$): **{pred_value} MPa**")
