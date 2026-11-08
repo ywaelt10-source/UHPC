@@ -99,22 +99,29 @@ st.write("Input the 12 mixture parameters to predict compressive strength ($F_{c
 st.sidebar.header("🛠️ Input Parameters")
 
 # Sidebar inputs with precision
-scms = st.sidebar.number_input("SCMS (mass fraction)", min_value=0.0, max_value=2.0, value=0.2000, step=0.0100, format="%.4f")
-cement_ratio = st.sidebar.number_input("Cement ratio (ratio)", min_value=0.0, max_value=5.0, value=1.0000, step=0.0100, format="%.4f")
-sf_ratio = st.sidebar.number_input("SF ratio (ratio)", min_value=0.0, max_value=2.0, value=0.2500, step=0.0100, format="%.4f")
-fa_ratio = st.sidebar.number_input("FA ratio (ratio)", min_value=0.0, max_value=2.0, value=0.0000, step=0.0100, format="%.4f")
-water = st.sidebar.number_input("Water (mass fraction)", min_value=0.0, max_value=2.0, value=0.1800, step=0.0010, format="%.4f")
-sand_ratio = st.sidebar.number_input("Sand ratio (ratio)", min_value=0.0, max_value=5.0, value=1.1000, step=0.0100, format="%.4f")
-sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=1.0, value=0.0150, step=0.0001, format="%.4f")
-qp = st.sidebar.number_input("QP (mass fraction)", min_value=0.0, max_value=2.0, value=0.0000, step=0.0100, format="%.4f")
-stf = st.sidebar.number_input("STF (vol. fraction)", min_value=0.0, max_value=1.0, value=0.0200, step=0.0001, format="%.4f")
-fiber_type = st.sidebar.number_input("additional fiber type (encoded)", min_value=0.0, max_value=10.0, value=0.0000, step=1.0000, format="%.1f")
-fiber_ratio = st.sidebar.number_input("additional fiber ratio (vol. fraction)", min_value=0.0, max_value=1.0, value=0.0000, step=0.0001, format="%.4f")
-temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1000.0, value=20.0000, step=1.0000, format="%.2f")
+scms = st.sidebar.number_input("SCMS (mass fraction)", min_value=0.262857, max_value=0.668779, value=0.2700, step=0.0100, format="%.4f")
+cement_ratio = st.sidebar.number_input("Cement ratio (ratio)", min_value=0.492432, max_value=1.0000, value=1.0000, step=0.0100, format="%.4f")
+sf_ratio = st.sidebar.number_input("SF ratio (ratio)", min_value=0.0, max_value=0.300048, value=0.2500, step=0.0100, format="%.4f")
+fa_ratio = st.sidebar.number_input("FA ratio (ratio)", min_value=0.0, max_value=0.367169, value=0.0000, step=0.0100, format="%.4f")
+water = st.sidebar.number_input("Water (mass fraction)", min_value=0.00488, max_value=0.122731, value=0.1000, step=0.0010, format="%.4f")
+sand_ratio = st.sidebar.number_input("Sand ratio (ratio)", min_value=0.0, max_value=1.0, value=1.000, step=0.0100, format="%.4f")
+sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=0.019525, value=0.01000, step=0.0001, format="%.4f")
+qp = st.sidebar.number_input("QP (mass fraction)", min_value=0.0, max_value=0.115275, value=0.1000, step=0.0100, format="%.4f")
+stf = st.sidebar.number_input("STF (vol. fraction)", min_value=0.0, max_value=0.12, value=0.0200, step=0.0001, format="%.4f")
+fiber_type = st.sidebar.number_input("additional fiber type (encoded)", min_value=0.0, max_value=15.0, value=0.0000, step=1.0000, format="%.1f")
+fiber_ratio = st.sidebar.number_input("additional fiber ratio (vol. fraction)", min_value=0.0, max_value=1.0, value=0.03300, step=0.0001, format="%.4f")
+temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1050.0, value=20.0000, step=1.0000, format="%.2f")
 
 # Prediction Logic
 if st.button("🚀 Predict & Log Experiment", type="primary"):
     if model is not None:
+        is_valid, err_msg = validate_inputs()
+        
+        if not is_valid:
+            st.error(f"❌ (Boundary Violation):** {err_msg}")
+            st.warning("⚠️  Please refer to Table 2 for boundary limits")
+            st.stop()
+            else:
         try:
             # Construct DataFrame with exact feature names and order required by the model
             input_data = pd.DataFrame([{
