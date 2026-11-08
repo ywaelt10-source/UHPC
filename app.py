@@ -16,9 +16,7 @@ def load_model():
     if os.path.exists(model_path):
         return joblib.load(model_path)
     return None
-
 model = load_model()
-
 OPERATIONAL_LIMITS = {
     'scms': {'name': 'SCMS (mass fraction)', 'min': 0.262857, 'max': 0.668779, 'step': 0.0100, 'unit': ''},
     'cement_ratio': {'name': 'Cement ratio', 'min': 0.492432, 'max': 1.0000, 'step': 0.0100, 'unit': ''},
@@ -31,7 +29,7 @@ OPERATIONAL_LIMITS = {
     'stf': {'name': 'STF (vol. fraction)', 'min': 0.0000, 'max': 0.12, 'step': 0.0001, 'unit': ''},
     'fiber_type': {'name': 'Additional fiber type (encoded)', 'min': 0.0, 'max': 15, 'step': 1.0, 'unit': ''},
     'fiber_ratio': {'name': 'Additional fiber ratio (vol. fraction)', 'min': 0.0000, 'max': 0.033, 'step': 0.0001, 'unit': ''},
-    'temp': {'name': 'Temperature', 'min': 20.0, 'max': 1050, 'step': 1.0, 'unit': '°C'}
+    'temp': {'name': 'Temperature', 'min': 20.0, 'max': 1050, 'step': 1.0, 'unit': '°C'}}
 # 3. Database Setup (Auto-Reset Old Database Schema)
 def init_db():
     db_file = "experiments.db"
