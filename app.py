@@ -113,45 +113,44 @@ fiber_ratio = st.sidebar.number_input("additional fiber ratio (vol. fraction)", 
 temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1050.0, value=20.0000, step=1.0000, format="%.2f")
 
 # Prediction Logic
+# Prediction Logic
 if st.button("🚀 Predict & Log Experiment", type="primary"):
     if model is not None:
         is_valid, err_msg = validate_inputs()
-        
         if not is_valid:
-            st.error(f"❌ (Boundary Violation):** {err_msg}")
-            st.warning("⚠️  Please refer to Table 2 for boundary limits")
+            st.error("⚠️ **Prediction Haltered:** Input value is out of the valid database range. Please refer to Table X for boundary limits.")
             st.stop()
         else:
-             try:
-            # Construct DataFrame with exact feature names and order required by the model
-            input_data = pd.DataFrame([{
-                'SCMS': scms,
-                'Cement ratio': cement_ratio,
-                'SF ratio': sf_ratio,
-                'FA ratio': fa_ratio,
-                'Water': water,
-                'Sand ratio': sand_ratio,
-                'SP': sp,
-                'QP': qp,
-                'STF': stf,
-                'additional fiber type': fiber_type,
-                'additional fiber ratio': fiber_ratio,
-                'temp': temp
-            }])
-            
-            # Unrounded full-precision prediction value
-            pred = model.predict(input_data)[0]
-            pred_value = float(pred)
-            
-            save_prediction(cement_ratio, sf_ratio, fa_ratio, scms, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, pred_value)
-            st.success(f"✅ Predicted Compressive Strength ($F_{{cu}}$): **{pred_value} MPa**")
-            
-        except Exception as e:
-            st.error(f"⚠️ Prediction Error: {e}")
+            try:
+                # Construct DataFrame with exact feature names required by the model
+                input_data = pd.DataFrame([{
+                    'SCMS': scms,
+                    'Cement ratio': cement_ratio,
+                    'SF ratio': sf_ratio,
+                    'FA ratio': fa_ratio,
+                    'Water': water,
+                    'Sand ratio': sand_ratio,
+                    'SP': sp,
+                    'QP': qp,
+                    'STF': stf,
+                    'additional fiber type': fiber_type,
+                    'additional fiber ratio': fiber_ratio,
+                    'temp': temp
+                }])
+                
+                # Model Prediction
+                pred = model.predict(input_data)[0]
+                pred_value = float(pred)
+                
+                # Save to database
+                save_prediction(scms, cement_ratio, sf_ratio, fa_ratio, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, pred_value)
+                
+                st.success(f"✅ Predicted Compressive Strength ($F_{{cu}}$): **{pred_value:.2f} MPa**")
+                
+            except Exception as e:
+                st.error(f"⚠️ Prediction Error: {e}")
     else:
         st.error("⚠️ Model file (`model.pkl`) not found!")
-
-st.divider()
 
 # 5. History and CSV Download
 st.subheader("📊 Experiment History Log")
