@@ -122,7 +122,7 @@ if st.button("🚀 Predict & Log Experiment", type="primary"):
             st.warning("⚠️  Please refer to Table 2 for boundary limits")
             st.stop()
             else:
-        try:
+                try:
             # Construct DataFrame with exact feature names and order required by the model
             input_data = pd.DataFrame([{
                 'SCMS': scms,
