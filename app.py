@@ -6,7 +6,6 @@ import sqlite3
 import os
 from datetime import datetime
 
-is_valid, err_msg = validate_inputs()
 # 1. Page Config
 st.set_page_config(page_title="UHPC Strength Predictor", page_icon="🏗️", layout="wide")
 
@@ -17,7 +16,9 @@ def load_model():
     if os.path.exists(model_path):
         return joblib.load(model_path)
     return None
+
 model = load_model()
+
 OPERATIONAL_LIMITS = {
     'scms': {'name': 'SCMS (mass fraction)', 'min': 0.262857, 'max': 0.668779, 'step': 0.0100, 'unit': ''},
     'cement_ratio': {'name': 'Cement ratio', 'min': 0.492432, 'max': 1.0000, 'step': 0.0100, 'unit': ''},
@@ -28,21 +29,27 @@ OPERATIONAL_LIMITS = {
     'sp': {'name': 'SP (mass fraction)', 'min': 0.0000, 'max': 0.019525, 'step': 0.0001, 'unit': ''},
     'qp': {'name': 'QP (mass fraction)', 'min': 0.0000, 'max': 0.115275, 'step': 0.0100, 'unit': ''},
     'stf': {'name': 'STF (vol. fraction)', 'min': 0.0000, 'max': 0.12, 'step': 0.0001, 'unit': ''},
-    'fiber_type': {'name': 'Additional fiber type (encoded)', 'min': 0.0, 'max': 15, 'step': 1.0, 'unit': ''},
+    'fiber_type': {'name': 'Additional fiber type (encoded)', 'min': 0.0, 'max': 15.0, 'step': 1.0, 'unit': ''},
     'fiber_ratio': {'name': 'Additional fiber ratio (vol. fraction)', 'min': 0.0000, 'max': 0.033, 'step': 0.0001, 'unit': ''},
-    'temp': {'name': 'Temperature', 'min': 20.0, 'max': 1050, 'step': 1.0, 'unit': '°C'}}
+    'temp': {'name': 'Temperature', 'min': 20.0, 'max': 1050.0, 'step': 1.0, 'unit': '°C'}
+}
+
+def validate_inputs(user_inputs):
+    for key, val in user_inputs.items():
+        limits = OPERATIONAL_LIMITS[key]
+        if val < limits['min'] or val > limits['max']:
+            return False, f"{limits['name']} ({val}) is outside the valid range [{limits['min']} – {limits['max']}]."
+    return True, ""
+
 # 3. Database Setup (Auto-Reset Old Database Schema)
 def init_db():
     db_file = "experiments.db"
-    
-    # Reset DB if schema doesn't match current 12-feature structure
     if os.path.exists(db_file):
         conn = sqlite3.connect(db_file)
         c = conn.cursor()
         c.execute("PRAGMA table_info(predictions)")
         columns = [column[1] for column in c.fetchall()]
         conn.close()
-        
         if 'sf_ratio' not in columns or len(columns) != 15:
             os.remove(db_file)
 
@@ -74,14 +81,13 @@ def save_prediction(scms, cement, sf, fa, water, sand, sp, qp, stf, f_type, f_ra
     conn = sqlite3.connect("experiments.db")
     c = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # 14 values inserted into 14 columns (id is auto-incremented)
     c.execute('''
         INSERT INTO predictions (
             timestamp, scms, cement_ratio, sf_ratio, fa_ratio, water, 
             sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, predicted_fcu
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (now, cement, sf, fa, scms, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu))
+    ''', (now, scms, cement, sf, fa, water, sand, sp, qp, stf, f_type, f_ratio, temp, fcu))
     conn.commit()
     conn.close()
 
@@ -110,19 +116,25 @@ sp = st.sidebar.number_input("SP (mass fraction)", min_value=0.0, max_value=0.01
 qp = st.sidebar.number_input("QP (mass fraction)", min_value=0.0, max_value=0.115275, value=0.1000, step=0.0100, format="%.4f")
 stf = st.sidebar.number_input("STF (vol. fraction)", min_value=0.0, max_value=0.12, value=0.0200, step=0.0001, format="%.4f")
 fiber_type = st.sidebar.number_input("additional fiber type (encoded)", min_value=0.0, max_value=15.0, value=0.0000, step=1.0000, format="%.1f")
-fiber_ratio = st.sidebar.number_input("additional fiber ratio (vol. fraction)", min_value=0.0, max_value=1.0, value=0.03300, step=0.0001, format="%.4f")
+fiber_ratio = st.sidebar.number_input("additional fiber ratio (vol. fraction)", min_value=0.0, max_value=1.0, value=0.0000, step=0.0001, format="%.4f")
 temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1050.0, value=20.0000, step=1.0000, format="%.2f")
 
 # Prediction Logic
-# Prediction Logic
 if st.button("🚀 Predict & Log Experiment", type="primary"):
     if model is not None:
+        user_inputs = {
+            'scms': scms, 'cement_ratio': cement_ratio, 'sf_ratio': sf_ratio,
+            'fa_ratio': fa_ratio, 'water': water, 'sand_ratio': sand_ratio,
+            'sp': sp, 'qp': qp, 'stf': stf, 'fiber_type': fiber_type,
+            'fiber_ratio': fiber_ratio, 'temp': temp
+        }
+        is_valid, err_msg = validate_inputs(user_inputs)
+
         if not is_valid:
-            st.error("⚠️ **Prediction Haltered:** Input value is out of the valid database range. Please refer to Table X for boundary limits.")
+            st.error(f"⚠️ Prediction Halted: {err_msg} Please refer to Table X for boundary limits.")
             st.stop()
         else:
             try:
-                # Construct DataFrame with exact feature names required by the model
                 input_data = pd.DataFrame([{
                     'SCMS': scms,
                     'Cement ratio': cement_ratio,
@@ -145,12 +157,12 @@ if st.button("🚀 Predict & Log Experiment", type="primary"):
                 # Save to database
                 save_prediction(scms, cement_ratio, sf_ratio, fa_ratio, water, sand_ratio, sp, qp, stf, fiber_type, fiber_ratio, temp, pred_value)
                 
-                st.success(f"✅ Predicted Compressive Strength ($F_{{cu}}$): **{pred_value:.2f} MPa**")
+                st.success(f"✅ Predicted Compressive Strength ($F_{{cu}}$): *{pred_value:.2f} MPa*")
                 
             except Exception as e:
                 st.error(f"⚠️ Prediction Error: {e}")
     else:
-        st.error("⚠️ Model file (`model.pkl`) not found!")
+        st.error("⚠️ Model file (model.pkl) not found!")
 
 # 5. History and CSV Download
 st.subheader("📊 Experiment History Log")
