@@ -6,6 +6,7 @@ import sqlite3
 import os
 from datetime import datetime
 
+is_valid, err_msg = validate_inputs()
 # 1. Page Config
 st.set_page_config(page_title="UHPC Strength Predictor", page_icon="🏗️", layout="wide")
 
@@ -116,7 +117,6 @@ temp = st.sidebar.number_input("temp (°C)", min_value=20.0, max_value=1050.0, v
 # Prediction Logic
 if st.button("🚀 Predict & Log Experiment", type="primary"):
     if model is not None:
-        is_valid, err_msg = validate_inputs()
         if not is_valid:
             st.error("⚠️ **Prediction Haltered:** Input value is out of the valid database range. Please refer to Table X for boundary limits.")
             st.stop()
